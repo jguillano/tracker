@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Website Build Tracker | Shop Marketing Pros</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;600;700;800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --border: #dde3ee;
+    --accent: #3aaa6e;
+    --accent2: #1e5fa8;
+    --warn: #d97706;
+    --done: #3aaa6e;
+    --text: #1a2540;
+    --muted: #6b7a99;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Roboto', sans-serif;
+    min-height: 100vh;
+    padding: 0 0 80px;
+    overflow-x: hidden;
+  }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(135deg, #1e5fa8 0%, #1a4d8a 100%);
+    padding: 32px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 320px; height: 320px;
+    background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-top { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+  .hero-logo { height: 48px; display: block; filter: brightness(0) invert(1); }
+  .hero-client-badge {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 99px;
+    padding: 6px 16px;
+    font-size: 13px;
+    color: #fff;
+    font-weight: 500;
+    display: none;
+    align-items: center;
+    gap: 8px;
+  }
+  .hero-client-badge .badge-label { opacity: 0.65; font-size: 11px; }
+  .hero h1 {
+    font-family: 'Roboto Slab', serif;
+    font-size: clamp(20px, 3.5vw, 34px);
+    font-weight: 800;
+    color: #fff;
+    margin-top: 20px;
+    line-height: 1.15;
+  }
+  .hero h1 em { color: #6ee9a8; font-style: normal; }
+  .hero p { margin-top: 8px; color: rgba(255,255,255,0.7); font-size: 14px; max-width: 480px; }
+
+  /* ADMIN PANEL */
+  .admin-panel { background: #1a2540; border-bottom: 3px solid var(--accent2); }
+  .admin-toggle {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.75);
+    font-family: 'Roboto', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 14px 40px;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    letter-spacing: 0.3px;
+    transition: color 0.2s;
+  }
+  .admin-toggle:hover { color: #fff; }
+  .admin-toggle .arrow { margin-left: auto; transition: transform 0.3s; font-size: 10px; opacity: 0.5; }
+  .admin-toggle.open { color: #fff; }
+  .admin-toggle.open .arrow { transform: rotate(180deg); }
+  .admin-body {
+    display: none;
+    padding: 20px 40px 28px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+  }
+  .admin-body.open { display: block; }
+  .admin-grid { display: grid; grid-template-columns: 1fr 1fr auto; gap: 16px; align-items: end; }
+  .admin-field label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 7px;
+    font-family: 'Roboto Slab', serif;
+  }
+  .admin-field input,
+  .admin-field select {
+    width: 100%;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.13);
+    color: #fff;
+    font-family: 'Roboto', sans-serif;
+    font-size: 14px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .admin-field input::placeholder { color: rgba(255,255,255,0.25); }
+  .admin-field input:focus,
+  .admin-field select:focus { border-color: var(--accent); }
+  .admin-field select option { background: #1a2540; }
+  .btn-generate {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    font-family: 'Roboto Slab', serif;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 22px;
+    border-radius: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+    height: 42px;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .btn-generate:hover { background: #2d9660; transform: translateY(-1px); }
+
+  .link-box {
+    display: none;
+    margin-top: 16px;
+    background: rgba(58,170,110,0.1);
+    border: 1px solid rgba(58,170,110,0.25);
+    border-radius: 10px;
+    padding: 14px 18px;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .link-box.show { display: flex; }
+  .link-info { flex: 1; min-width: 200px; }
+  .link-label-text { font-size: 10px; color: rgba(255,255,255,0.4); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
+  .link-url-text { font-size: 12px; color: #6ee9a8; word-break: break-all; line-height: 1.5; }
+  .btn-copy {
+    background: rgba(255,255,255,0.09);
+    border: 1px solid rgba(255,255,255,0.18);
+    color: #fff;
+    font-family: 'Roboto', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .btn-copy:hover { background: rgba(255,255,255,0.18); }
+  .btn-copy.copied { background: var(--accent); border-color: var(--accent); }
+
+  /* MAIN CONTENT */
+  .content { padding: 0 40px; }
+
+  /* PROGRESS */
+  .progress-wrap { padding-top: 32px; }
+  .progress-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .progress-meta .prog-label { font-family: 'Roboto Slab', serif; font-size: 13px; color: var(--muted); }
+  .progress-meta .pct { font-size: 22px; font-weight: 700; color: var(--accent); font-family: 'Roboto Slab', serif; }
+  .bar-track { height: 8px; background: var(--border); border-radius: 99px; overflow: hidden; }
+  .bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 0.8s cubic-bezier(.4,0,.2,1);
+    box-shadow: 0 0 10px rgba(58,170,110,0.25);
+  }
+
+  /* TIMELINE DOTS */
+  .track-section { padding-top: 36px; }
+  .section-label {
+    font-family: 'Roboto Slab', serif;
+    font-size: 11px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 22px;
+  }
+  .stages-row {
+    display: flex;
+    align-items: flex-start;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scrollbar-width: none;
+  }
+  .stages-row::-webkit-scrollbar { display: none; }
+  .stage-item {
+    display: flex; flex-direction: column; align-items: center;
+    flex: 1; min-width: 84px; cursor: pointer; position: relative;
+  }
+  .stage-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 17px;
+    left: calc(50% + 17px);
+    right: calc(-50% + 17px);
+    height: 2px;
+    background: var(--border);
+    z-index: 0;
+    transition: background 0.4s;
+  }
+  .stage-item.done:not(:last-child)::after { background: var(--done); }
+  .stage-item.active:not(:last-child)::after { background: linear-gradient(90deg, var(--done), var(--border)); }
+  .dot {
+    width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Roboto Slab', serif; font-size: 12px; font-weight: 700;
+    position: relative; z-index: 1;
+    transition: all 0.3s;
+    border: 2px solid var(--border);
+    background: var(--card);
+    color: var(--muted);
+  }
+  .stage-item.done .dot { background: var(--done); border-color: var(--done); color: #fff; box-shadow: 0 0 12px rgba(58,170,110,0.25); }
+  .stage-item.active .dot {
+    background: var(--accent); border-color: var(--accent); color: #fff;
+    box-shadow: 0 0 20px rgba(58,170,110,0.45);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 18px rgba(58,170,110,0.3); }
+    50% { box-shadow: 0 0 30px rgba(58,170,110,0.6); }
+  }
+  .stage-label { margin-top: 9px; font-size: 9.5px; text-align: center; color: var(--muted); max-width: 78px; line-height: 1.3; }
+  .stage-item.done .stage-label { color: var(--done); }
+  .stage-item.active .stage-label { color: var(--accent); font-weight: 500; }
+  .stage-week { margin-top: 4px; font-size: 9px; color: #aab; text-align: center; }
+  .stage-item.active .stage-week, .stage-item.done .stage-week { color: var(--muted); }
+
+  /* DETAIL CARD */
+  .detail-section { padding-top: 28px; }
+  .detail-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 28px 30px;
+    position: relative; overflow: hidden;
+    box-shadow: 0 2px 16px rgba(26,37,64,0.06);
+  }
+  .detail-card::before {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+  .detail-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
+  .detail-stage-badge {
+    display: inline-flex; align-items: center;
+    background: rgba(58,170,110,0.1); border: 1px solid rgba(58,170,110,0.25);
+    color: var(--accent); font-size: 10px; font-family: 'Roboto Slab', serif;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    padding: 4px 12px; border-radius: 99px; margin-bottom: 8px;
+  }
+  .detail-title { font-family: 'Roboto Slab', serif; font-size: 20px; font-weight: 700; color: var(--text); }
+  .time-remaining { text-align: right; flex-shrink: 0; }
+  .time-remaining .weeks { font-family: 'Roboto Slab', serif; font-size: 36px; font-weight: 800; color: var(--accent2); line-height: 1; }
+  .time-remaining .weeks-label { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .approval-tag {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+    font-size: 12px; color: var(--warn);
+    background: rgba(217,119,6,0.08); border: 1px solid rgba(217,119,6,0.2);
+    padding: 4px 12px; border-radius: 99px;
+  }
+  .checklist-title {
+    font-family: 'Roboto Slab', serif; font-size: 11px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 12px;
+  }
+  .checklist { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+  .check-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; background: #f8fafc;
+    border: 1px solid var(--border); border-radius: 8px;
+    cursor: pointer; transition: all 0.2s; user-select: none;
+  }
+  .check-item:hover { border-color: var(--accent); background: rgba(58,170,110,0.04); }
+  .check-item.checked { border-color: rgba(58,170,110,0.35); background: rgba(58,170,110,0.05); }
+  .check-box {
+    width: 20px; height: 20px; border-radius: 5px;
+    border: 2px solid var(--border); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; font-size: 11px; color: #fff;
+  }
+  .check-item.checked .check-box { background: var(--done); border-color: var(--done); }
+  .check-text { font-size: 13px; color: var(--text); line-height: 1.35; }
+  .check-item.checked .check-text { color: var(--muted); text-decoration: line-through; }
+  .note {
+    margin-top: 16px; padding: 12px 16px;
+    background: rgba(217,119,6,0.07); border: 1px solid rgba(217,119,6,0.2);
+    border-radius: 8px; font-size: 13px; color: var(--warn); line-height: 1.5;
+  }
+  .all-done-msg {
+    margin-top: 14px; padding: 12px 16px;
+    background: rgba(58,170,110,0.07); border: 1px solid rgba(58,170,110,0.2);
+    border-radius: 8px; font-size: 13px; color: var(--accent);
+  }
+  .stage-switcher { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border); }
+  .stage-switcher label {
+    font-family: 'Roboto Slab', serif; font-size: 11px; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 8px;
+  }
+  .stage-switcher select {
+    background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    font-family: 'Roboto', sans-serif; font-size: 13px;
+    padding: 8px 12px; border-radius: 8px; outline: none;
+    cursor: pointer; max-width: 380px; width: 100%;
+  }
+  .stage-switcher select:focus { border-color: var(--accent); }
+
+  /* ALL STAGES GRID */
+  .all-stages { padding-top: 28px; }
+  .stages-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .sg-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px; cursor: pointer;
+    transition: all 0.2s; box-shadow: 0 1px 6px rgba(26,37,64,0.04);
+  }
+  .sg-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(26,37,64,0.1); }
+  .sg-card.active-card { border-color: var(--accent); background: rgba(58,170,110,0.04); }
+  .sg-card.done-card { border-color: rgba(58,170,110,0.3); background: rgba(58,170,110,0.02); }
+  .sg-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; }
+  .sg-num { font-family: 'Roboto Slab', serif; font-size: 11px; color: var(--muted); }
+  .sg-status { font-size: 10px; padding: 2px 8px; border-radius: 99px; font-family: 'Roboto Slab', serif; letter-spacing: 0.8px; text-transform: uppercase; }
+  .status-done { background: rgba(58,170,110,0.12); color: var(--done); }
+  .status-active { background: rgba(30,95,168,0.1); color: var(--accent2); }
+  .status-upcoming { background: rgba(107,122,153,0.1); color: var(--muted); }
+  .sg-name { font-family: 'Roboto Slab', serif; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; line-height: 1.3; }
+  .sg-week { font-size: 11px; color: var(--muted); }
+
+  /* EMPTY STATE */
+  .empty-state { text-align: center; padding: 64px 24px; }
+  .empty-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-state h2 { font-family: 'Roboto Slab', serif; font-size: 22px; color: var(--text); margin-bottom: 12px; font-weight: 700; }
+  .empty-state p { font-size: 14px; color: var(--muted); max-width: 360px; margin: 0 auto; line-height: 1.7; }
+  .empty-arrow { margin-top: 24px; font-size: 13px; color: var(--accent); font-weight: 500; }
+
+  /* SAVE TOAST */
+  .save-toast {
+    position: fixed; bottom: 28px; right: 28px;
+    background: #1a2540; color: #fff;
+    font-family: 'Roboto', sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 99px;
+    box-shadow: 0 4px 20px rgba(26,37,64,0.2);
+    opacity: 0; transform: translateY(12px);
+    transition: all 0.3s; pointer-events: none; z-index: 999;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .save-toast.show { opacity: 1; transform: translateY(0); }
+  .save-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+
+  /* CLIENT DASHBOARD */
+  .dash-empty {
+    display: flex; align-items: center; gap: 12px;
+    padding: 18px 0 4px;
+    color: rgba(255,255,255,0.35);
+    font-size: 13px;
+  }
+  .dash-empty-icon { font-size: 22px; }
+  .dash-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 12px;
+  }
+  .dash-title {
+    font-family: 'Roboto Slab', serif;
+    font-size: 11px; letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+  }
+  .client-list { display: flex; flex-direction: column; gap: 10px; }
+  .client-row {
+    display: flex; align-items: center; gap: 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 14px 16px;
+    transition: border-color 0.2s;
+  }
+  .client-row:hover { border-color: rgba(255,255,255,0.15); }
+  .client-avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Roboto Slab', serif; font-size: 15px; font-weight: 700;
+    color: #fff; flex-shrink: 0;
+  }
+  .client-info { flex: 1; min-width: 0; }
+  .client-name { font-family: 'Roboto Slab', serif; font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .client-stage-label { font-size: 11px; color: rgba(255,255,255,0.4); margin-bottom: 8px; }
+  .client-bar-wrap { display: flex; align-items: center; gap: 10px; }
+  .client-bar-track { flex: 1; height: 5px; background: rgba(255,255,255,0.1); border-radius: 99px; overflow: hidden; }
+  .client-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.5s ease; }
+  .client-bar-fill.launched { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+  .client-pct { font-size: 11px; font-weight: 700; color: var(--accent); white-space: nowrap; font-family: 'Roboto Slab', serif; }
+  .client-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .btn-client-copy {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.7);
+    font-family: 'Roboto', sans-serif;
+    font-size: 11px; padding: 6px 12px;
+    border-radius: 6px; cursor: pointer;
+    transition: all 0.2s; white-space: nowrap;
+  }
+  .btn-client-copy:hover { background: rgba(255,255,255,0.14); color: #fff; }
+  .btn-client-delete {
+    background: transparent;
+    border: 1px solid rgba(239,68,68,0.25);
+    color: rgba(239,68,68,0.6);
+    font-size: 14px; width: 32px; height: 32px;
+    border-radius: 6px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .btn-client-delete:hover { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.5); color: #ef4444; }
+
+  @media (max-width: 640px) {
+    .client-actions { flex-direction: column; }
+    .btn-client-copy { font-size: 10px; padding: 5px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-top">
+    <img class="hero-logo" src="https://shopmarketingpros.com/wp-content/uploads/2020/11/smp-logo@2x.png" alt="Shop Marketing Pros" />
+    <div class="hero-client-badge" id="clientBadge">
+      <span class="badge-label">Client</span>
+      <strong id="clientBadgeName"></strong>
+    </div>
+  </div>
+  <h1>Your Website<br><em>Build Tracker</em></h1>
+  <p>See exactly where we are, what's needed from you, and how close we are to your launch.</p>
+</div>
+
+<div class="admin-panel" id="adminPanel">
+  <button class="admin-toggle" id="adminToggle" onclick="toggleAdmin()">
+    🔧&nbsp; Admin — Generate a Client Link
+    <span class="arrow">▼</span>
+  </button>
+  <div class="admin-body" id="adminBody">
+    <div class="admin-grid">
+      <div class="admin-field">
+        <label>Client Name</label>
+        <input type="text" id="adminClientName" placeholder="e.g. Smith Auto Repair" />
+      </div>
+      <div class="admin-field">
+        <label>Starting Stage</label>
+        <select id="adminStageSelect">
+          <option value="0">Phase 1 — Kickoff</option>
+          <option value="1">Phase 2 — Sitemap Creation and Review</option>
+          <option value="2">Phase 3 — Home Page Content & Design Creation</option>
+          <option value="3">Phase 4 — Home Page Content & Design Review</option>
+          <option value="4">Phase 5 — HP Development and Internal Pages Content Creation</option>
+          <option value="5">Phase 6 — Internal Pages Design & Full Site Development</option>
+          <option value="6">Phase 7 — SMP Internal UX/QA Checks and Edits</option>
+          <option value="7">Phase 8 — Client Full Website Review and Revision</option>
+          <option value="8">Final Phase — Pre-Launch and Launch</option>
+        </select>
+      </div>
+      <div class="admin-field">
+        <label>&nbsp;</label>
+        <button class="btn-generate" onclick="generateLink()">⚡ Generate Link</button>
+      </div>
+    </div>
+    <div class="link-box" id="linkBox">
+      <div class="link-info">
+        <div class="link-label-text">Shareable Client Link</div>
+        <div class="link-url-text" id="linkUrlText"></div>
+      </div>
+      <button class="btn-copy" id="copyBtn" onclick="copyLink()">Copy Link</button>
+    </div>
+
+    <!-- CLIENT DASHBOARD -->
+    <div id="clientDashboard" style="margin-top:24px;"></div>
+  </div>
+</div>
+
+<div class="content" id="mainContent"></div>
+
+<div class="save-toast" id="saveToast">
+  <div class="save-dot"></div> <span class="toast-msg">Progress saved</span>
+</div>
+
+<script>
+// Last phase index that shows a countdown (Phase 8 = index 7)
+const LAST_COUNTDOWN_PHASE = 7;
+
+const stages = [
+  {
+    num: 1, phase: 1, label: "Kickoff", week: "Week 1", weeksToEnd: 12,
+    checklist: [
+      "Kickoff Survey Form Completed",
+      "Kickoff Call Completed",
+      "Homework Email Items Completed",
+      "Logo Uploaded to Shared Google Drive"
+    ]
+  },
+  {
+    num: 2, phase: 2, label: "Sitemap Creation and Review", week: "Week 2–3", weeksToEnd: 11,
+    checklist: [
+      "Review Sitemap",
+      "Add feedback or Approve Site Map",
+      "Images Uploaded to Shared Google Drive"
+    ],
+    approval: "1–2 Days Suggested Client Approval Time",
+    approvalNote: "Estimated website launch date depends on client approval time. Delays in approval may change the launch date."
+  },
+  {
+    num: 3, phase: 3, label: "Home Page Content & Design Creation", week: "Week 4", weeksToEnd: 9,
+    checklist: ["NONE — We're creating your design. Nothing needed from you right now. Sit tight!"]
+  },
+  {
+    num: 4, phase: 4, label: "Home Page Content & Design Review", week: "Week 4–6", weeksToEnd: 8,
+    checklist: [
+      "Review Design",
+      "Add feedback or Approve Design Concept",
+      "Final Call for Photography Added to Shared Google Drive"
+    ],
+    approval: "2–3 Days Suggested Client Approval Time",
+    approvalNote: "Estimated website launch date depends on client approval time. Delays in approval may change the launch date."
+  },
+  {
+    num: 5, phase: 5, label: "HP Development and Internal Pages Content Creation", week: "Week 7", weeksToEnd: 7,
+    checklist: ["Team Roster Completed"],
+    note: "Important reminder: Revisit your current website company's contract policies for cancellation."
+  },
+  {
+    num: 6, phase: 6, label: "Internal Pages Design & Full Site Development", week: "Week 8–10", weeksToEnd: 5,
+    checklist: ["Final Call for Domain Access"]
+  },
+  {
+    num: 7, phase: 7, label: "SMP Internal UX/QA Checks and Edits", week: "Week 11–12", weeksToEnd: 3,
+    checklist: ["NONE — We're doing internal quality checks. Nothing needed from you right now. Sit tight!"]
+  },
+  {
+    num: 8, phase: 8, label: "Client Full Website Review and Revision", week: "Week 11–12", weeksToEnd: 0,
+    checklist: [
+      "Review Entire Website on Preview Link",
+      "Add feedback or Approve Website for Launch"
+    ],
+    approval: "3–5 Days Suggested Client Approval Time",
+    approvalNote: "Estimated website launch date depends on client approval time. Delays in approval may change the launch date."
+  },
+  {
+    num: 9, phase: 9, label: "Pre-Launch and Launch", week: "Week 11–12", weeksToEnd: 0,
+    checklist: ["Confirm Form Test Submissions"]
+  }
+];
+
+// ── State ──────────────────────────────────────────────────────────
+let clientId     = null;
+let clientName   = '';
+let currentStage = 0;
+let checkedItems = {};
+let toastTimer   = null;
+
+// ── URL helpers ────────────────────────────────────────────────────
+function getParams() {
+  const p = new URLSearchParams(window.location.search);
+  return { id: p.get('c'), name: p.get('n'), stage: p.get('s') };
+}
+function buildShareUrl(id, name, stage) {
+  const base = window.location.href.split('?')[0];
+  return `${base}?c=${encodeURIComponent(id)}&n=${encodeURIComponent(name)}&s=${stage}`;
+}
+function slugify(str) {
+  return str.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 36);
+}
+
+// ── Storage (localStorage, keyed per client) ───────────────────────
+function skey() { return `smp_${clientId}`; }
+function saveState() {
+  if (!clientId) return;
+  try {
+    localStorage.setItem(skey(), JSON.stringify({ stage: currentStage, checked: checkedItems }));
+    flashToast('Progress saved');
+  } catch(e) {}
+}
+function loadState() {
+  if (!clientId) return false;
+  try {
+    const raw = localStorage.getItem(skey());
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    currentStage = typeof d.stage === 'number' ? d.stage : currentStage;
+    checkedItems = d.checked || {};
+    return true;
+  } catch(e) { return false; }
+}
+
+// ── Toast ──────────────────────────────────────────────────────────
+function flashToast(msg) {
+  const t = document.getElementById('saveToast');
+  const txt = t.querySelector('.toast-msg');
+  if (txt) txt.textContent = msg || 'Progress saved';
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── Client Registry (stored in localStorage) ───────────────────────
+const REGISTRY_KEY = 'smp_client_registry';
+
+function loadRegistry() {
+  try { return JSON.parse(localStorage.getItem(REGISTRY_KEY)) || []; }
+  catch(e) { return []; }
+}
+function saveRegistry(list) {
+  try { localStorage.setItem(REGISTRY_KEY, JSON.stringify(list)); } catch(e) {}
+}
+function getClientLiveStage(id, defaultStage) {
+  try {
+    const raw = localStorage.getItem(`smp_${id}`);
+    if (!raw) return defaultStage;
+    const d = JSON.parse(raw);
+    return typeof d.stage === 'number' ? d.stage : defaultStage;
+  } catch(e) { return defaultStage; }
+}
+
+// ── Admin panel ────────────────────────────────────────────────────
+function toggleAdmin() {
+  document.getElementById('adminToggle').classList.toggle('open');
+  document.getElementById('adminBody').classList.toggle('open');
+}
+
+function generateLink() {
+  const name = document.getElementById('adminClientName').value.trim();
+  const stage = parseInt(document.getElementById('adminStageSelect').value);
+  if (!name) { alert('Please enter a client name.'); return; }
+  const id  = slugify(name) + '-' + Date.now().toString(36);
+  const url = buildShareUrl(id, name, stage);
+
+  // Save to registry
+  const registry = loadRegistry();
+  registry.push({ id, name, stage, url, created: Date.now() });
+  saveRegistry(registry);
+
+  // Show generated link box
+  document.getElementById('linkUrlText').textContent = url;
+  document.getElementById('linkBox').classList.add('show');
+  const cb = document.getElementById('copyBtn');
+  cb.textContent = 'Copy Link';
+  cb.classList.remove('copied');
+
+  // Clear inputs
+  document.getElementById('adminClientName').value = '';
+  document.getElementById('adminStageSelect').value = '0';
+
+  // Refresh dashboard
+  renderAdminDashboard();
+}
+
+function copyLink() {
+  const url = document.getElementById('linkUrlText').textContent;
+  navigator.clipboard.writeText(url).then(() => {
+    const cb = document.getElementById('copyBtn');
+    cb.textContent = '✓ Copied!';
+    cb.classList.add('copied');
+    setTimeout(() => { cb.textContent = 'Copy Link'; cb.classList.remove('copied'); }, 2600);
+  });
+}
+
+function copyClientLink(url) {
+  navigator.clipboard.writeText(url).then(() => {
+    flashToast('Link copied!');
+  });
+}
+
+function deleteClient(id) {
+  if (!confirm('Remove this client from your dashboard? Their saved progress will also be cleared.')) return;
+  const registry = loadRegistry().filter(c => c.id !== id);
+  saveRegistry(registry);
+  try { localStorage.removeItem(`smp_${id}`); } catch(e) {}
+  renderAdminDashboard();
+}
+
+function renderAdminDashboard() {
+  const container = document.getElementById('clientDashboard');
+  if (!container) return;
+  const registry  = loadRegistry();
+
+  if (registry.length === 0) {
+    container.innerHTML = `
+      <div class="dash-empty">
+        <div class="dash-empty-icon">👥</div>
+        <div class="dash-empty-text">No clients yet — generate your first link above.</div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="dash-header">
+      <span class="dash-title">Active Clients (${registry.length})</span>
+    </div>
+    <div class="client-list">
+      ${registry.map(c => {
+        const liveStage  = getClientLiveStage(c.id, c.stage);
+        const st         = stages[liveStage];
+        const pct        = Math.round((liveStage / (stages.length - 1)) * 100);
+        const isLaunched = liveStage === stages.length - 1;
+        return `
+          <div class="client-row">
+            <div class="client-avatar">${c.name.charAt(0).toUpperCase()}</div>
+            <div class="client-info">
+              <div class="client-name">${c.name}</div>
+              <div class="client-stage-label">Stage ${st.num} — ${st.label}</div>
+              <div class="client-bar-wrap">
+                <div class="client-bar-track">
+                  <div class="client-bar-fill ${isLaunched ? 'launched' : ''}" style="width:${pct}%"></div>
+                </div>
+                <span class="client-pct">${pct}%</span>
+              </div>
+            </div>
+            <div class="client-actions">
+              <button class="btn-client-copy" onclick="copyClientLink('${c.url}')" title="Copy link">🔗 Copy Link</button>
+              <button class="btn-client-delete" onclick="deleteClient('${c.id}')" title="Delete client">🗑</button>
+            </div>
+          </div>`;
+      }).join('')}
+    </div>`;
+}
+
+// ── Stage / checklist controls ─────────────────────────────────────
+function setStage(val) {
+  currentStage = parseInt(val);
+  saveState();
+  render();
+}
+function toggleCheck(si, ii) {
+  const k = `${si}-${ii}`;
+  checkedItems[k] = !checkedItems[k];
+  saveState();
+  render();
+}
+function isChecked(si, ii) { return !!checkedItems[`${si}-${ii}`]; }
+function jumpToStage(i) {
+  currentStage = i;
+  saveState();
+  render();
+  document.querySelector('.detail-section')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── Render ─────────────────────────────────────────────────────────
+function render() {
+  const mc = document.getElementById('mainContent');
+
+  if (!clientId) {
+    mc.innerHTML = `
+      <div style="padding: 40px 0 0;">
+        <div style="font-family:'Roboto Slab',serif; font-size:11px; letter-spacing:2.5px; text-transform:uppercase; color:var(--muted); margin-bottom:8px;">Getting Started</div>
+        <p style="font-size:14px; color:var(--muted); max-width:480px; line-height:1.7;">Open the <strong style="color:var(--text)">Admin Panel</strong> above to generate a unique tracking link for each client. Their progress and checklist will be saved automatically when they use their link.</p>
+      </div>`;
+    return;
+  }
+
+  // Show client badge in hero
+  document.getElementById('clientBadge').style.display = 'flex';
+  document.getElementById('clientBadgeName').textContent = clientName;
+
+  const pct = Math.round((currentStage / (stages.length - 1)) * 100);
+  const s   = stages[currentStage];
+  const wl  = s.weeksToEnd;
+  const isLaunchPhase = currentStage >= LAST_COUNTDOWN_PHASE + 1;
+  const allChecked = s.checklist.every((_, i) => isChecked(currentStage, i));
+
+  // Weeks display
+  let weeksNum, weeksLabel;
+  if (isLaunchPhase) {
+    weeksNum  = '🚀';
+    weeksLabel = 'Ready for Launch!';
+  } else if (wl === 0) {
+    weeksNum  = '🚀';
+    weeksLabel = 'Your site is almost ready for launch!';
+  } else {
+    weeksNum  = wl;
+    weeksLabel = `week${wl !== 1 ? 's' : ''} before full site completion`;
+  }
+
+  mc.innerHTML = `
+    <div class="progress-wrap">
+      <div class="progress-meta">
+        <span class="prog-label">Overall Progress</span>
+        <span class="pct">${pct}%</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+    </div>
+
+    <div class="track-section">
+      <div class="section-label">Project Timeline</div>
+      <div class="stages-row">
+        ${stages.map((st, i) => {
+          const cls = i < currentStage ? 'done' : i === currentStage ? 'active' : '';
+          return `<div class="stage-item ${cls}" onclick="jumpToStage(${i})">
+            <div class="dot">${i < currentStage ? '✓' : st.num}</div>
+            <div class="stage-label">${st.label}</div>
+            <div class="stage-week">${i < stages.length - 2 ? st.week : ''}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-card">
+        <div class="detail-header">
+          <div>
+            <div class="detail-stage-badge">${currentStage === stages.length - 1 ? 'Final Phase' : 'Phase ' + s.num}</div>
+            <div class="detail-title">${s.label}</div>
+            ${currentStage < stages.length - 2 ? `<div style="margin-top:5px;font-size:12px;color:var(--muted)">${s.week}</div>` : ''}
+            ${s.approval ? `<div class="approval-tag">⏱ ${s.approval}</div>` : ''}
+            ${s.approvalNote ? `<div style="margin-top:8px; font-size:11px; color:var(--muted); font-style:italic; line-height:1.5;">* ${s.approvalNote}</div>` : ''}
+          </div>
+          <div class="time-remaining">
+            <div class="weeks">${weeksNum}</div>
+            <div class="weeks-label">${weeksLabel}</div>
+          </div>
+        </div>
+
+        <div class="checklist-title">Action Items for This Stage</div>
+        <div class="checklist">
+          ${s.checklist.map((item, i) => `
+            <div class="check-item ${isChecked(currentStage, i) ? 'checked' : ''}" onclick="toggleCheck(${currentStage},${i})">
+              <div class="check-box">${isChecked(currentStage, i) ? '✓' : ''}</div>
+              <div class="check-text">${item}</div>
+            </div>`).join('')}
+        </div>
+
+        ${s.note ? `<div class="note">⚠️ ${s.note}</div>` : ''}
+        ${allChecked && currentStage < stages.length - 1 ? `<div class="all-done-msg">✅ All items checked — you're ready for the next stage!</div>` : ''}
+
+        <div class="stage-switcher">
+          <label>Update Current Stage</label>
+          <select onchange="setStage(this.value)">
+            ${stages.map((st, i) => `<option value="${i}" ${i === currentStage ? 'selected' : ''}>${i === stages.length - 1 ? 'Final Phase' : 'Phase ' + st.num} — ${st.label}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="all-stages">
+      <div class="section-label">All Stages Overview</div>
+      <div class="stages-grid">
+        ${stages.map((st, i) => {
+          const status = i < currentStage ? 'done' : i === currentStage ? 'active' : 'upcoming';
+          const lbl    = { done: 'Complete', active: 'Current', upcoming: 'Upcoming' }[status];
+          return `<div class="sg-card ${status !== 'upcoming' ? status+'-card' : ''}" onclick="jumpToStage(${i})">
+            <div class="sg-card-top">
+              <span class="sg-num">${i === stages.length - 1 ? 'Final Phase' : 'Phase ' + st.num}</span>
+              <span class="sg-status status-${status}">${lbl}</span>
+            </div>
+            <div class="sg-name">${st.label}</div>
+            <div class="sg-week">${i < stages.length - 2 ? st.week + (st.weeksToEnd > 0 ? ' · ' + st.weeksToEnd + ' wks to launch' : '') : (i === stages.length - 1 ? '🚀 Launch!' : '🚀 Almost there!')}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ── Init ───────────────────────────────────────────────────────────
+(function init() {
+  const { id, name, stage } = getParams();
+  if (id) {
+    clientId    = id;
+    clientName  = decodeURIComponent(name || 'Client');
+    currentStage = parseInt(stage || '0');
+    // Load saved state; fall back to URL stage if first visit
+    if (!loadState()) {
+      currentStage = parseInt(stage || '0');
+    }
+  }
+  // Hide admin panel if this is a client link
+  if (id) {
+    document.getElementById('adminPanel').style.display = 'none';
+  } else {
+    renderAdminDashboard();
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
