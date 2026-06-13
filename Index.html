@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Website Build Tracker | Shop Marketing Pros</title>
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;600;700;800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
     --bg: #f4f6f9;
@@ -589,23 +590,35 @@ function slugify(str) {
   return str.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 36);
 }
 
-// ── Storage (localStorage, keyed per client) ───────────────────────
-function skey() { return `smp_${clientId}`; }
-function saveState() {
+// ── Supabase Setup ─────────────────────────────────────────────────
+const SUPABASE_URL = "https://ktbmnouorvynpdpnadmh.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0Ym1ub3VvcnZ5bnBkcG5hZG1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTg4MzUsImV4cCI6MjA5Njg5NDgzNX0.EyGXW_E-Rk5SqT0UQbgk1LPZURSq5gSR5Xn8LvbP0_U";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── Storage (Supabase — persistent across all browsers/devices) ────
+async function saveState() {
   if (!clientId) return;
   try {
-    localStorage.setItem(skey(), JSON.stringify({ stage: currentStage, checked: checkedItems }));
+    await sb.from('client_progress').upsert({
+      client_id: clientId,
+      stage: currentStage,
+      checked: checkedItems
+    }, { onConflict: 'client_id' });
     flashToast('Progress saved');
-  } catch(e) {}
+  } catch(e) { console.warn('saveState error', e); }
 }
-function loadState() {
+
+async function loadState() {
   if (!clientId) return false;
   try {
-    const raw = localStorage.getItem(skey());
-    if (!raw) return false;
-    const d = JSON.parse(raw);
-    currentStage = typeof d.stage === 'number' ? d.stage : currentStage;
-    checkedItems = d.checked || {};
+    const { data, error } = await sb
+      .from('client_progress')
+      .select('stage, checked')
+      .eq('client_id', clientId)
+      .single();
+    if (error || !data) return false;
+    currentStage = typeof data.stage === 'number' ? data.stage : currentStage;
+    checkedItems = data.checked || {};
     return true;
   } catch(e) { return false; }
 }
@@ -620,22 +633,33 @@ function flashToast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
 }
 
-// ── Client Registry (stored in localStorage) ───────────────────────
-const REGISTRY_KEY = 'smp_client_registry';
-
-function loadRegistry() {
-  try { return JSON.parse(localStorage.getItem(REGISTRY_KEY)) || []; }
-  catch(e) { return []; }
-}
-function saveRegistry(list) {
-  try { localStorage.setItem(REGISTRY_KEY, JSON.stringify(list)); } catch(e) {}
-}
-function getClientLiveStage(id, defaultStage) {
+// ── Client Registry (Supabase) ─────────────────────────────────────
+async function loadRegistry() {
   try {
-    const raw = localStorage.getItem(`smp_${id}`);
-    if (!raw) return defaultStage;
-    const d = JSON.parse(raw);
-    return typeof d.stage === 'number' ? d.stage : defaultStage;
+    const { data, error } = await sb
+      .from('client_registry')
+      .select('*')
+      .order('created', { ascending: false });
+    return error ? [] : (data || []);
+  } catch(e) { return []; }
+}
+
+async function saveRegistry(client) {
+  // Inserts a single new client record
+  try {
+    await sb.from('client_registry').insert(client);
+  } catch(e) { console.warn('saveRegistry error', e); }
+}
+
+async function getClientLiveStage(id, defaultStage) {
+  try {
+    const { data, error } = await sb
+      .from('client_progress')
+      .select('stage')
+      .eq('client_id', id)
+      .single();
+    if (error || !data) return defaultStage;
+    return typeof data.stage === 'number' ? data.stage : defaultStage;
   } catch(e) { return defaultStage; }
 }
 
@@ -645,17 +669,15 @@ function toggleAdmin() {
   document.getElementById('adminBody').classList.toggle('open');
 }
 
-function generateLink() {
+async function generateLink() {
   const name = document.getElementById('adminClientName').value.trim();
   const stage = parseInt(document.getElementById('adminStageSelect').value);
   if (!name) { alert('Please enter a client name.'); return; }
   const id  = slugify(name) + '-' + Date.now().toString(36);
   const url = buildShareUrl(id, name, stage);
 
-  // Save to registry
-  const registry = loadRegistry();
-  registry.push({ id, name, stage, url, created: Date.now() });
-  saveRegistry(registry);
+  // Save to Supabase registry
+  await saveRegistry({ id, name, stage, url, created: Date.now() });
 
   // Show generated link box
   document.getElementById('linkUrlText').textContent = url;
@@ -688,18 +710,19 @@ function copyClientLink(url) {
   });
 }
 
-function deleteClient(id) {
+async function deleteClient(id) {
   if (!confirm('Remove this client from your dashboard? Their saved progress will also be cleared.')) return;
-  const registry = loadRegistry().filter(c => c.id !== id);
-  saveRegistry(registry);
-  try { localStorage.removeItem(`smp_${id}`); } catch(e) {}
+  await sb.from('client_registry').delete().eq('id', id);
+  await sb.from('client_progress').delete().eq('client_id', id);
   renderAdminDashboard();
 }
 
-function renderAdminDashboard() {
+async function renderAdminDashboard() {
   const container = document.getElementById('clientDashboard');
   if (!container) return;
-  const registry  = loadRegistry();
+  container.innerHTML = `<div class="dash-empty"><div class="dash-empty-icon">⏳</div><div class="dash-empty-text">Loading clients…</div></div>`;
+
+  const registry = await loadRegistry();
 
   if (registry.length === 0) {
     container.innerHTML = `
@@ -710,13 +733,16 @@ function renderAdminDashboard() {
     return;
   }
 
+  // Resolve live stages for all clients in parallel
+  const liveStages = await Promise.all(registry.map(c => getClientLiveStage(c.id, c.stage)));
+
   container.innerHTML = `
     <div class="dash-header">
       <span class="dash-title">Active Clients (${registry.length})</span>
     </div>
     <div class="client-list">
-      ${registry.map(c => {
-        const liveStage  = getClientLiveStage(c.id, c.stage);
+      ${registry.map((c, idx) => {
+        const liveStage  = liveStages[idx];
         const st         = stages[liveStage];
         const pct        = Math.round((liveStage / (stages.length - 1)) * 100);
         const isLaunched = liveStage === stages.length - 1;
@@ -743,21 +769,21 @@ function renderAdminDashboard() {
 }
 
 // ── Stage / checklist controls ─────────────────────────────────────
-function setStage(val) {
+async function setStage(val) {
   currentStage = parseInt(val);
-  saveState();
+  await saveState();
   render();
 }
-function toggleCheck(si, ii) {
+async function toggleCheck(si, ii) {
   const k = `${si}-${ii}`;
   checkedItems[k] = !checkedItems[k];
-  saveState();
+  await saveState();
   render();
 }
 function isChecked(si, ii) { return !!checkedItems[`${si}-${ii}`]; }
-function jumpToStage(i) {
+async function jumpToStage(i) {
   currentStage = i;
-  saveState();
+  await saveState();
   render();
   document.querySelector('.detail-section')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
@@ -879,24 +905,22 @@ function render() {
 }
 
 // ── Init ───────────────────────────────────────────────────────────
-(function init() {
+(async function init() {
   const { id, name, stage } = getParams();
   if (id) {
-    clientId    = id;
-    clientName  = decodeURIComponent(name || 'Client');
+    clientId     = id;
+    clientName   = decodeURIComponent(name || 'Client');
     currentStage = parseInt(stage || '0');
-    // Load saved state; fall back to URL stage if first visit
-    if (!loadState()) {
-      currentStage = parseInt(stage || '0');
-    }
+    // Load saved state from Supabase; fall back to URL stage if first visit
+    const loaded = await loadState();
+    if (!loaded) currentStage = parseInt(stage || '0');
   }
   // Hide admin panel if this is a client link
   if (id) {
     document.getElementById('adminPanel').style.display = 'none';
   } else {
-    renderAdminDashboard();
+    await renderAdminDashboard();
   }
-
   render();
 })();
 </script>
